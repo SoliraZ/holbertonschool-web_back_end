@@ -16,11 +16,12 @@ def log_stats(mongo_collection):
 
     methods = ["GET", "POST", "PUT", "PATCH", "DELETE"]
     print("Methods:")
+
     for method in methods:
         method_count = collection.count_documents({"method": method})
         print(f"\tmethod {method}: {method_count}")
 
-    status_count = collection.count_documents({"path": "/status"})
+    status_count = collection.count_documents({"method": "GET", "path": "/status"})
     print(f"{status_count} status check")
 
 
