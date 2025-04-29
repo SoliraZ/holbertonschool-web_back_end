@@ -21,8 +21,8 @@ def log_stats(mongo_collection):
         method_count = collection.count_documents({"method": method})
         print(f"\tmethod {method}: {method_count}")
 
-    status_count = collection.count_documents({"method": "GET", "path": "/status"})
-    print(f"{status_count} status check")
+    status_c = collection.count_documents({"method": "GET", "path": "/status"})
+    print(f"{status_c} status check")
 
 
 if __name__ == "__main__":
