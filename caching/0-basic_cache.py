@@ -10,6 +10,7 @@ class BasicCache(BaseCaching):
         """Assign an item to the cache under the given key."""
         if key is not None and item is not None:
             self.cache_data[key] = item
+
     def get(self, key):
         """Retrieve an item from the cache by key."""
         if key is not None:
