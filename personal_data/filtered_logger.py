@@ -71,7 +71,8 @@ def main() -> None:
         "FROM users;"
     )
     logger = get_logger()
-    for name, email, phone, ssn, password, ip, last_login, user_agent in cursor:
+    for (name, email, phone, ssn, password,
+         ip, last_login, user_agent) in cursor:
         message = (
             f"name={name}; email={email}; phone={phone}; ssn={ssn}; "
             f"password={password}; ip={ip}; "
