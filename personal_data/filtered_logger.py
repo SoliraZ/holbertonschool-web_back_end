@@ -60,3 +60,27 @@ def get_db() -> mysql.connector.connection.MySQLConnection:
         host=host,
         database=database,
     )
+
+
+def main() -> None:
+    """Obtain a DB connection and display all users with redacted PII."""
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute(
+        "SELECT name, email, phone, ssn, password, ip, last_login, user_agent "
+        "FROM users;"
+    )
+    logger = get_logger()
+    for name, email, phone, ssn, password, ip, last_login, user_agent in cursor:
+        message = (
+            f"name={name}; email={email}; phone={phone}; ssn={ssn}; "
+            f"password={password}; ip={ip}; "
+            f"last_login={last_login.isoformat()}; user_agent={user_agent};"
+        )
+        logger.info(message)
+    cursor.close()
+    db.close()
+
+
+if __name__ == "__main__":
+    main()
