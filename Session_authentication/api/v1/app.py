@@ -29,6 +29,8 @@ def before_request_handler():
     """Filter requests before they are handled by the views
     """
     if auth is None:
+        # No authentication system, no current user
+        request.current_user = None
         return
 
     excluded_paths = ['/api/v1/status/', '/api/v1/unauthorized/',
@@ -40,7 +42,9 @@ def before_request_handler():
     if auth.authorization_header(request) is None:
         abort(401)
 
-    if auth.current_user(request) is None:
+    request.current_user = auth.current_user(request)
+
+    if request.current_user is None:
         abort(403)
 
 
