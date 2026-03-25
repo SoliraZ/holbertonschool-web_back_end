@@ -12,13 +12,7 @@ from client import GithubOrgClient
 class TestGithubOrgClient(unittest.TestCase):
     """Test cases for GithubOrgClient."""
 
-    @parameterized.expand([
-        ("google",),
-        ("abc",),
-    ])
-    @patch("client.get_json")
-    def test_org(self, org_name, mock_get_json):
-        """Assert org returns payload and calls get_json once."""
+    def _assert_org(self, org_name, mock_get_json):
         expected = {"login": org_name}
         mock_get_json.return_value = expected
 
@@ -28,3 +22,20 @@ class TestGithubOrgClient(unittest.TestCase):
         mock_get_json.assert_called_once_with(
             "https://api.github.com/orgs/{}".format(org_name)
         )
+
+    @parameterized.expand([
+        ("google",),
+        ("abc",),
+    ])
+    @patch("client.get_json")
+    def test_org(self, org_name, mock_get_json):
+        """Assert org returns payload and calls get_json once."""
+        self._assert_org(org_name, mock_get_json)
+
+    @patch("client.get_json")
+    def test_org_0(self, mock_get_json):
+        self._assert_org("google", mock_get_json)
+
+    @patch("client.get_json")
+    def test_org_1(self, mock_get_json):
+        self._assert_org("abc", mock_get_json)
