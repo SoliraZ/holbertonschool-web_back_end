@@ -12,13 +12,10 @@ from client import GithubOrgClient
 class TestGithubOrgClient(unittest.TestCase):
     """Test cases for GithubOrgClient."""
 
-    @parameterized.expand(
-        [
-            ("google",),
-            ("abc",),
-        ],
-        name_func=lambda func, num, params: f"{func.__name__}_{num}",
-    )
+    @parameterized.expand([
+        ("google",),
+        ("abc",),
+    ])
     @patch("client.get_json")
     def test_org(self, org_name, mock_get_json):
         """Assert org returns payload and calls get_json once."""
