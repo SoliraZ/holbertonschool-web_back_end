@@ -1,73 +1,16 @@
 #!/usr/bin/env python3
-"""Unit tests for client.py."""
+
+"""Unit tests for GithubOrgClient."""
 
 import unittest
-from unittest.mock import patch
-
-try:
-    from parameterized import parameterized
-except ImportError:
-    import re
-    from functools import wraps
-
-    def _sanitize(s: str) -> str:
-        return re.sub(r"[^0-9a-zA-Z]+", "_", s).strip("_")
-
-    class _ExpandedMethod:
-        def __init__(self, func, cases):
-            self._func = func
-            self._cases = list(cases)
-
-        def __set_name__(self, owner, name):
-            func = self._func
-            for idx, raw_case in enumerate(self._cases):
-                case = raw_case if isinstance(raw_case, tuple) else (raw_case,)
-                suffix = (
-                    _sanitize(case[0])
-                    if case and isinstance(case[0], str)
-                    else ""
-                )
-                method_name = f"{name}_{idx}"
-                if suffix:
-                    method_name = f"{method_name}_{suffix}"
-
-                @wraps(func)
-                def _method(self, _case=case, _func=func):
-                    return _func(self, *_case)
-
-                setattr(owner, method_name, _method)
-
-            def _placeholder(*_args, **_kwargs):
-                raise AttributeError(
-                    f"{name} was expanded; run {name}_<n> instead"
-                )
-
-            setattr(owner, name, _placeholder)
-
-    class parameterized:
-        @staticmethod
-        def expand(cases):
-            def _decorator(func):
-                return _ExpandedMethod(func, cases)
-
-            return _decorator
-
+from unittest.mock import patch, PropertyMock, Mock
+from parameterized import parameterized, parameterized_class
+from fixtures import TEST_PAYLOAD
 from client import GithubOrgClient
 
 
 class TestGithubOrgClient(unittest.TestCase):
-    """Test cases for GithubOrgClient."""
-
-    def _assert_org(self, org_name, mock_get_json):
-        expected = {"login": org_name}
-        mock_get_json.return_value = expected
-
-        client = GithubOrgClient(org_name)
-        self.assertEqual(client.org, expected)
-
-        mock_get_json.assert_called_once_with(
-            "https://api.github.com/orgs/{}".format(org_name)
-        )
+    """Tests for GithubOrgClient methods."""
 
     @parameterized.expand([
         ("google",),
@@ -75,13 +18,95 @@ class TestGithubOrgClient(unittest.TestCase):
     ])
     @patch("client.get_json")
     def test_org(self, org_name, mock_get_json):
-        """Assert org returns payload and calls get_json once."""
-        self._assert_org(org_name, mock_get_json)
+        """Test GithubOrgClient.org method."""
+        expected = {"name": org_name}
+        mock_get_json.return_value = expected
+
+        client = GithubOrgClient(org_name)
+        self.assertEqual(client.org, expected)
+        mock_get_json.assert_called_once_with(
+            client.ORG_URL.format(org=org_name))
+
+    def test_public_repos_url(self):
+        """Test GithubOrgClient._public_repos_url property."""
+        repos_url = "https://api.github.com/orgs/google/repos"
+        with patch(
+            "client.GithubOrgClient.org",
+            new_callable=PropertyMock,
+        ) as mock_org:
+            mock_org.return_value = {"repos_url": repos_url}
+            client = GithubOrgClient("google")
+            self.assertEqual(client._public_repos_url, repos_url)
 
     @patch("client.get_json")
-    def test_org_0(self, mock_get_json):
-        self._assert_org("google", mock_get_json)
+    def test_public_repos(self, mock_get_json):
+        """Test GithubOrgClient.public_repos method."""
+        mock_get_json.return_value = [
+            {"name": "repo1"},
+            {"name": "repo2"},
+        ]
+        repos_url = "https://api.github.com/orgs/google/repos"
 
-    @patch("client.get_json")
-    def test_org_1(self, mock_get_json):
-        self._assert_org("abc", mock_get_json)
+        with patch(
+            "client.GithubOrgClient._public_repos_url",
+            new_callable=PropertyMock,
+        ) as mock_public_url:
+            mock_public_url.return_value = repos_url
+
+            client = GithubOrgClient("google")
+            self.assertEqual(client.public_repos(), ["repo1", "repo2"])
+            mock_public_url.assert_called_once()
+            mock_get_json.assert_called_once_with(repos_url)
+
+    @parameterized.expand([
+        ({"license": {"key": "my_license"}}, "my_license", True),
+        ({"license": {"key": "other_license"}}, "my_license", False),
+    ])
+    def test_has_license(self, repo, license_key, expected):
+        """Test GithubOrgClient.has_license static method."""
+        self.assertEqual(
+            GithubOrgClient.has_license(repo, license_key),
+            expected,
+        )
+
+
+@parameterized_class(
+    ("org_payload", "repos_payload", "expected_repos", "apache2_repos"),
+    TEST_PAYLOAD,
+)
+class TestIntegrationGithubOrgClient(unittest.TestCase):
+    """Integration tests for GithubOrgClient."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Set up patched requests.get for integration tests."""
+        cls.org_name = cls._extract_org_name(cls.org_payload)
+        cls.get_patcher = patch("requests.get")
+        cls.mock_get = cls.get_patcher.start()
+
+        def side_effect(url):
+            response = Mock()
+            if url == GithubOrgClient.ORG_URL.format(org=cls.org_name):
+                response.json.return_value = cls.org_payload
+            elif url == cls.org_payload.get("repos_url"):
+                response.json.return_value = cls.repos_payload
+            else:
+                response.json.return_value = {}
+            return response
+
+        cls.mock_get.side_effect = side_effect
+
+    @classmethod
+    def tearDownClass(cls):
+        """Stop patched requests.get."""
+        cls.get_patcher.stop()
+
+    @staticmethod
+    def _extract_org_name(org_payload):
+        """Extract org name from repos_url structure."""
+        if not org_payload:
+            return ""
+        if org_payload.get("login"):
+            return org_payload["login"]
+        repos_url = org_payload.get("repos_url", "")
+        return repos_url.rstrip("/").split("/")[-2] if repos_url else ""
