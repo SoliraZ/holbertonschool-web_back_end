@@ -13,13 +13,12 @@ class TestGithubOrgClient(unittest.TestCase):
     """Tests for GithubOrgClient methods."""
 
     @parameterized.expand([
-        ("google",),
-        ("abc",),
+        ("google", {"payload": True}),
+        ("abc", {"payload": False}),
     ])
     @patch("client.get_json")
-    def test_org(self, org_name, mock_get_json):
+    def test_org(self, org_name, expected, mock_get_json):
         """Test GithubOrgClient.org method."""
-        expected = {"name": org_name}
         mock_get_json.return_value = expected
 
         client = GithubOrgClient(org_name)
