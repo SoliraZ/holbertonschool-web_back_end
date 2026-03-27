@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>{{ _("home_title") }}</title>
+</head>
+
+<body>
+  <h1>{{ _("home_header") }}</h1>
+  {% if g.user %}
+  {% set msg = _("logged_in_as", username=g.user["name"]) %}
+  <p>
+    {% if msg == "logged_in_as" %}
+    You are logged in as %(username)s.
+    {% else %}
+    {{ msg }}
+    {% endif %}
+  </p>
+  {% else %}
+  {% set msg = _("not_logged_in") %}
+  <p>
+    {% if msg == "not_logged_in" %}
+    You are not logged in.
+    {% else %}
+    {{ msg }}
+    {% endif %}
+  </p>
+  {% endif %}
+</body>
+
+</html>
