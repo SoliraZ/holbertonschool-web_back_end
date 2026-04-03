@@ -1,11 +1,14 @@
--- Create SafeDiv function to divide two integers safely
--- Returns zero when divisor is zero to avoid division errors
--- Define function SafeDiv with safe division behavior
+-- SafeDiv: divide a by b, or 0 when b is 0
+DROP FUNCTION IF EXISTS SafeDiv;
+
 DELIMITER //
-CREATE FUNCTION SafeDiv(a INT, b INT) RETURNS DOUBLE
+CREATE FUNCTION SafeDiv(a INT, b INT) RETURNS FLOAT
 DETERMINISTIC
 NO SQL
 BEGIN
-    RETURN IF(b = 0, 0, a / b);
+    IF b = 0 THEN
+        RETURN 0;
+    END IF;
+    RETURN (a / b);
 END//
 DELIMITER ;
