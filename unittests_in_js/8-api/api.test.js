@@ -2,16 +2,6 @@ const { expect } = require('chai');
 const request = require('request');
 
 describe('Index page', () => {
-  let server;
-
-  before(() => {
-    server = require('./api');
-  });
-
-  after((done) => {
-    server.close(done);
-  });
-
   it('returns status code 200', (done) => {
     request('http://localhost:7865', (error, response) => {
       expect(error).to.equal(null);
