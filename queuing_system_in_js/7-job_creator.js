@@ -64,8 +64,7 @@ jobs.forEach((jobData) => {
     console.log(`Notification job ${job.id} failed: ${errMsg}`);
   });
 
-  job.on('progress', (progress, total) => {
-    const percentage = Math.round((progress / total) * 100);
-    console.log(`Notification job ${job.id} ${percentage}% complete`);
+  job.on('progress', (progress) => {
+    console.log(`Notification job ${job.id} ${progress}% complete`);
   });
 });
